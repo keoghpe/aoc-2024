@@ -140,53 +140,53 @@ mod tests {
     }
     #[test]
     fn test_parse_corrupted_memory() {
-        // assert_eq!(
-        //     Vec::<(i64, i64)>::new(),
-        //     parse_corrupted_memory(&"".to_string())
-        // );
+        assert_eq!(
+            Vec::<(i64, i64)>::new(),
+            parse_corrupted_memory(&"".to_string())
+        );
 
-        // assert_eq!(
-        //     Vec::<(i64, i64)>::new(),
-        //     parse_corrupted_memory(&"sometotallyrandomnonsense".to_string())
-        // );
+        assert_eq!(
+            Vec::<(i64, i64)>::new(),
+            parse_corrupted_memory(&"sometotallyrandomnonsense".to_string())
+        );
 
-        // assert_eq!(
-        //     vec![(2, 4)],
-        //     parse_corrupted_memory(&"mul(2,4)".to_string())
-        // );
+        assert_eq!(
+            vec![(2, 4)],
+            parse_corrupted_memory(&"mul(2,4)".to_string())
+        );
 
-        // assert_eq!(
-        //     vec![(2, 4), (2, 4)],
-        //     parse_corrupted_memory(&"mul(2,4)mul(2,4)".to_string())
-        // );
+        assert_eq!(
+            vec![(2, 4), (2, 4)],
+            parse_corrupted_memory(&"mul(2,4)mul(2,4)".to_string())
+        );
 
-        // assert_eq!(
-        //     Vec::<(i64, i64)>::new(),
-        //     parse_corrupted_memory(&"mul(4*".to_string())
-        // );
+        assert_eq!(
+            Vec::<(i64, i64)>::new(),
+            parse_corrupted_memory(&"mul(4*".to_string())
+        );
 
-        // assert_eq!(
-        //     Vec::<(i64, i64)>::new(),
-        //     parse_corrupted_memory(&"mul(6,9!".to_string())
-        // );
+        assert_eq!(
+            Vec::<(i64, i64)>::new(),
+            parse_corrupted_memory(&"mul(6,9!".to_string())
+        );
 
-        // assert_eq!(
-        //     Vec::<(i64, i64)>::new(),
-        //     parse_corrupted_memory(&"?(12,34)".to_string())
-        // );
+        assert_eq!(
+            Vec::<(i64, i64)>::new(),
+            parse_corrupted_memory(&"?(12,34)".to_string())
+        );
 
-        // assert_eq!(
-        //     Vec::<(i64, i64)>::new(),
-        //     parse_corrupted_memory(&"mul ( 2 , 4 )".to_string())
-        // );
+        assert_eq!(
+            Vec::<(i64, i64)>::new(),
+            parse_corrupted_memory(&"mul ( 2 , 4 )".to_string())
+        );
 
-        // assert_eq!(
-        //     vec![(2, 4), (5, 5), (11, 8), (8, 5)],
-        //     parse_corrupted_memory(
-        //         &"xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))"
-        //             .to_string()
-        //     )
-        // );
+        assert_eq!(
+            vec![(2, 4), (5, 5), (11, 8), (8, 5)],
+            parse_corrupted_memory(
+                &"xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))"
+                    .to_string()
+            )
+        );
 
         assert_eq!(
             vec![(815, 266), (392, 42), (640, 124), (96, 4), (371, 890)],
@@ -196,10 +196,10 @@ mod tests {
             )
         );
 
-        // assert_eq!(
-        //     Vec::<(i64, i64)>::new(),
-        //     parse_corrupted_memory(&"mul(200,)".to_string())
-        // );
+        assert_eq!(
+            Vec::<(i64, i64)>::new(),
+            parse_corrupted_memory(&"mul(200,)".to_string())
+        );
     }
 
     #[test]
