@@ -2,6 +2,15 @@
 // use std::io::{self, BufRead};
 // use std::path::Path;
 
+use std::ops::Mul;
+
+#[derive(Debug, PartialEq)]
+enum Operation {
+    Mul { left: i64, right: i64 },
+    Do,
+    Dont,
+}
+
 fn main() {
     if let Ok(contents) = std::fs::read_to_string("tests/day3.txt") {
         println!("{}", process_contents(&contents))
@@ -10,10 +19,10 @@ fn main() {
 
 fn process_contents(contents: &String) -> i64 {
     let instructions = parse_corrupted_memory(contents);
-    process_instructions(instructions)
+    process_instructions(&instructions)
 }
 
-fn parse_corrupted_memory(contents: &String) -> Vec<(i64, i64)> {
+fn parse_corrupted_memory(contents: &String) -> Vec<Operation> {
     // scan until you get to mul(
     // scan 1-3 digits
     // scan a comma
@@ -96,7 +105,10 @@ fn parse_corrupted_memory(contents: &String) -> Vec<(i64, i64)> {
                 match (left.parse::<i64>(), right.parse::<i64>()) {
                     (Ok(left_parsed), Ok(right_parsed)) => {
                         println!("push to result");
-                        result.push((left_parsed, right_parsed));
+                        result.push(Operation::Mul {
+                            left: left_parsed,
+                            right: right_parsed,
+                        });
                     }
                     (_, _) => {
                         println!("parsing error");
@@ -120,68 +132,99 @@ fn parse_corrupted_memory(contents: &String) -> Vec<(i64, i64)> {
     result
 }
 
-fn process_instructions(instructions: Vec<(i64, i64)>) -> i64 {
+fn process_instructions(instructions: &Vec<Operation>) -> i64 {
     instructions
         .iter()
-        .map(|&(insta, instb)| insta * instb)
+        .map(|operation| match operation {
+            Operation::Mul { left, right } => left * right,
+            _ => 0,
+        })
         .sum()
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{parse_corrupted_memory, process_contents};
+    use crate::{parse_corrupted_memory, process_contents, Operation};
 
     #[test]
     fn test_process_instructions() {
         use super::*;
-        assert_eq!(0, process_instructions(vec![]));
-        assert_eq!(4, process_instructions(vec![(2, 2)]));
-        assert_eq!(10, process_instructions(vec![(2, 2), (2, 2), (1, 2)]));
+        assert_eq!(0, process_instructions(&vec![]));
+        assert_eq!(
+            4,
+            process_instructions(&vec![Operation::Mul { left: 2, right: 2 }])
+        );
+        assert_eq!(
+            10,
+            process_instructions(&vec![
+                Operation::Mul { left: 2, right: 2 },
+                Operation::Mul { left: 2, right: 2 },
+                Operation::Mul { left: 1, right: 2 }
+            ])
+        );
     }
     #[test]
     fn test_parse_corrupted_memory() {
         assert_eq!(
-            Vec::<(i64, i64)>::new(),
+            Vec::<Operation>::new(),
             parse_corrupted_memory(&"".to_string())
         );
 
         assert_eq!(
-            Vec::<(i64, i64)>::new(),
+            Vec::<Operation>::new(),
             parse_corrupted_memory(&"sometotallyrandomnonsense".to_string())
         );
 
         assert_eq!(
-            vec![(2, 4)],
+            vec![Operation::Mul { left: 2, right: 4 }],
             parse_corrupted_memory(&"mul(2,4)".to_string())
         );
 
         assert_eq!(
-            vec![(2, 4), (2, 4)],
+            vec![Operation::Mul { left: 2, right: 4 }],
+            parse_corrupted_memory(&"mulmul(2,4)".to_string())
+        );
+
+        assert_eq!(
+            vec![
+                Operation::Mul { left: 2, right: 4 },
+                Operation::Mul { left: 2, right: 4 }
+            ],
             parse_corrupted_memory(&"mul(2,4)mul(2,4)".to_string())
         );
 
         assert_eq!(
-            Vec::<(i64, i64)>::new(),
+            Vec::<Operation>::new(),
             parse_corrupted_memory(&"mul(4*".to_string())
         );
 
         assert_eq!(
-            Vec::<(i64, i64)>::new(),
+            Vec::<Operation>::new(),
             parse_corrupted_memory(&"mul(6,9!".to_string())
         );
 
         assert_eq!(
-            Vec::<(i64, i64)>::new(),
+            Vec::<Operation>::new(),
             parse_corrupted_memory(&"?(12,34)".to_string())
         );
 
         assert_eq!(
-            Vec::<(i64, i64)>::new(),
+            Vec::<Operation>::new(),
             parse_corrupted_memory(&"mul ( 2 , 4 )".to_string())
         );
 
         assert_eq!(
-            vec![(2, 4), (5, 5), (11, 8), (8, 5)],
+            Vec::<Operation>::new(),
+            parse_corrupted_memory(&"mul(200,)".to_string())
+        );
+
+        assert_eq!(
+            vec![
+                Operation::Mul { left: 2, right: 4 },
+                Operation::Mul { left: 5, right: 5 },
+                Operation::Mul { left: 11, right: 8 },
+                Operation::Mul { left: 8, right: 5 }
+            ],
             parse_corrupted_memory(
                 &"xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))"
                     .to_string()
@@ -189,16 +232,11 @@ mod tests {
         );
 
         assert_eq!(
-            vec![(815, 266), (392, 42), (640, 124), (96, 4), (371, 890)],
+            vec![Operation::Mul { left:815, right: 266}, Operation::Mul { left:392, right: 42}, Operation::Mul { left:640, right: 124}, Operation::Mul { left:96, right: 4}, Operation::Mul { left:371, right: 890}],
             parse_corrupted_memory(
                 &"mul(815,266)from()>when(352,983)when()?*mul(392,42)what()^mul(640,124),+-~mul(96,4)'&}^!mul(371,890)}"
                     .to_string()
             )
-        );
-
-        assert_eq!(
-            Vec::<(i64, i64)>::new(),
-            parse_corrupted_memory(&"mul(200,)".to_string())
         );
     }
 
