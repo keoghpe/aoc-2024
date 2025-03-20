@@ -133,11 +133,26 @@ fn parse_corrupted_memory(contents: &String) -> Vec<Operation> {
 }
 
 fn process_instructions(instructions: &Vec<Operation>) -> i64 {
+    let mut should_process = true;
+
     instructions
         .iter()
         .map(|operation| match operation {
-            Operation::Mul { left, right } => left * right,
-            _ => 0,
+            Operation::Mul { left, right } => {
+                if should_process {
+                    left * right
+                } else {
+                    0
+                }
+            }
+            Operation::Do => {
+                should_process = true;
+                0
+            }
+            Operation::Dont => {
+                should_process = false;
+                0
+            }
         })
         .sum()
 }
@@ -159,6 +174,17 @@ mod tests {
             process_instructions(&vec![
                 Operation::Mul { left: 2, right: 2 },
                 Operation::Mul { left: 2, right: 2 },
+                Operation::Mul { left: 1, right: 2 }
+            ])
+        );
+
+        assert_eq!(
+            6,
+            process_instructions(&vec![
+                Operation::Mul { left: 2, right: 2 },
+                Operation::Dont,
+                Operation::Mul { left: 2, right: 2 },
+                Operation::Do,
                 Operation::Mul { left: 1, right: 2 }
             ])
         );
