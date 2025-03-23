@@ -2,7 +2,7 @@
 // use std::io::{self, BufRead};
 // use std::path::Path;
 
-use std::ops::Mul;
+use std::{ops::Mul, thread::current};
 
 #[derive(Debug, PartialEq)]
 enum Operation {
@@ -34,99 +34,114 @@ fn parse_corrupted_memory(contents: &String) -> Vec<Operation> {
     let mut left = "".to_string();
     let mut right = "".to_string();
     let mut parsed_comma = false;
-
-    // let reset_state = || {
-    //     consumed_chars = 0;
-    //     left = "".to_string();
-    //     right = "".to_string();
-    //     parsed_comma = false;
-    // };
+    let mut current_parsed_name = "".to_string();
 
     let mut result = vec![];
 
-    for (_, current_char) in contents.chars().enumerate() {
+    let content_chars = contents.chars();
+
+    for (i, current_char) in content_chars.enumerate() {
+
         // println!(
         //     "chars consumed: {}, current: {}, left: {}, right: {}, parsed_comma: {}",
         //     consumed_chars, current_char, left, right, parsed_comma
         // );
 
-        match (consumed_chars, current_char) {
-            (0, 'm') | (1, 'u') | (2, 'l') | (3, '(') => {
-                consumed_chars += 1;
-            }
-            // mul(123,123)
-            (4..=10, '0'..='9') => {
-                // technically, this allows numbers with leading 0s
-                // we could disallow this by checking that the left or right is empty before appending
+        // match current_char {
+        //     'a'..='z' | '\'' | '(' => {
+        //         match &current_parsed_name => {
+        //             // "mul(" => {}
+        //             "do()" {}
+        //             "don't()" {}
+        //         }
+        //     }
+        //     '0'..='9' => {}
+        //     ',' => {}
+        //     ')' => {
+        //         // append the operation
+        //     }
+        //     _ => {
+        //         // Anything else - reset
+        //     }
+        // }
 
-                if !parsed_comma {
-                    if left.len() < 3 {
-                        left.push_str(&current_char.to_string());
-                        consumed_chars += 1;
-                    } else {
-                        // println!("BREAKING LEFT");
-                        // break
-                        consumed_chars = 0;
-                        left = "".to_string();
-                        right = "".to_string();
-                        parsed_comma = false;
-                    }
-                } else {
-                    // println!("PARSED COMMA");
-                    if right.len() < 3 {
-                        println!("{} {}", consumed_chars, current_char);
-                        right.push_str(&current_char.to_string());
-                        consumed_chars += 1;
-                    } else {
-                        consumed_chars = 0;
-                        left = "".to_string();
-                        right = "".to_string();
-                        parsed_comma = false;
-                    }
-                }
-            }
-            (5..=9, ',') => {
-                // println!("PARSING COMMA");
-                if !parsed_comma {
-                    // println!("SETTING PARSED COMMA");
-                    parsed_comma = true;
-                    consumed_chars += 1;
-                } else {
-                    consumed_chars = 0;
-                    left = "".to_string();
-                    right = "".to_string();
-                    parsed_comma = false;
-                }
-            }
-            (6..=12, ')') => {
-                // we have successfully parsed an instruction
-                // append to the vector
+        // match (consumed_chars, current_char) {
+        //     (0, 'm') | (1, 'u') | (2, 'l') | (3, '(') => {
+        //         consumed_chars += 1;
+        //     }
+        //     // mul(123,123)
+        //     (4..=10, '0'..='9') => {
+        //         // technically, this allows numbers with leading 0s
+        //         // we could disallow this by checking that the left or right is empty before appending
 
-                match (left.parse::<i64>(), right.parse::<i64>()) {
-                    (Ok(left_parsed), Ok(right_parsed)) => {
-                        println!("push to result");
-                        result.push(Operation::Mul {
-                            left: left_parsed,
-                            right: right_parsed,
-                        });
-                    }
-                    (_, _) => {
-                        println!("parsing error");
-                    }
-                }
+        //         if !parsed_comma {
+        //             if left.len() < 3 {
+        //                 left.push_str(&current_char.to_string());
+        //                 consumed_chars += 1;
+        //             } else {
+        //                 // println!("BREAKING LEFT");
+        //                 // break
+        //                 consumed_chars = 0;
+        //                 left = "".to_string();
+        //                 right = "".to_string();
+        //                 parsed_comma = false;
+        //             }
+        //         } else {
+        //             // println!("PARSED COMMA");
+        //             if right.len() < 3 {
+        //                 println!("{} {}", consumed_chars, current_char);
+        //                 right.push_str(&current_char.to_string());
+        //                 consumed_chars += 1;
+        //             } else {
+        //                 consumed_chars = 0;
+        //                 left = "".to_string();
+        //                 right = "".to_string();
+        //                 parsed_comma = false;
+        //             }
+        //         }
+        //     }
+        //     (5..=9, ',') => {
+        //         // println!("PARSING COMMA");
+        //         if !parsed_comma {
+        //             // println!("SETTING PARSED COMMA");
+        //             parsed_comma = true;
+        //             consumed_chars += 1;
+        //         } else {
+        //             consumed_chars = 0;
+        //             left = "".to_string();
+        //             right = "".to_string();
+        //             parsed_comma = false;
+        //         }
+        //     }
+        //     (_, ')') => {
+        //         // we have successfully parsed an instruction
+        //         // append to the vector
 
-                consumed_chars = 0;
-                left = "".to_string();
-                right = "".to_string();
-                parsed_comma = false;
-            }
-            (_, _) => {
-                consumed_chars = 0;
-                left = "".to_string();
-                right = "".to_string();
-                parsed_comma = false;
-            }
-        }
+        //         match (left.parse::<i64>(), right.parse::<i64>()) {
+        //             (Ok(left_parsed), Ok(right_parsed)) => {
+        //                 println!("push to result");
+        //                 result.push(Operation::Mul {
+        //                     left: left_parsed,
+        //                     right: right_parsed,
+        //                 });
+        //             }
+        //             (_, _) => {
+        //                 println!("parsing error");
+        //             }
+        //         }
+
+        //         consumed_chars = 0;
+        //         left = "".to_string();
+        //         right = "".to_string();
+        //         parsed_comma = false;
+        //     }
+        //     (_, _) => {
+        //         consumed_chars = 0;
+        //         left = "".to_string();
+        //         right = "".to_string();
+        //         parsed_comma = false;
+        //     }
+        // }
     }
 
     result
