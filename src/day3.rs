@@ -28,19 +28,19 @@ impl Operation {
     }
 }
 
-struct Parser<'a> {
+struct Parser {
     current: i64,
     tail: i64,
     current_operation_string: String,
     is_parsing_args: bool,
     number_buffer: String,
     current_operation: Option<Operation>,
-    contents: &'a String,
+    chars: Vec<char>,
     result: Vec<Operation>,
 }
 
-impl<'a> Parser<'a> {
-    fn new(contents: &'a String) -> Self {
+impl Parser {
+    fn new(contents: &String) -> Self {
         Self {
             current: 0,
             tail: 0,
@@ -48,7 +48,7 @@ impl<'a> Parser<'a> {
             is_parsing_args: false,
             number_buffer: "".to_string(),
             current_operation: None,
-            contents: contents,
+            chars: contents.chars().collect(),
             result: vec![],
         }
     }
@@ -82,7 +82,11 @@ impl<'a> Parser<'a> {
     }
 
     fn current_char(&self) -> Option<char> {
-        self.contents.chars().nth(self.tail as usize)
+        if (self.tail as usize) < self.chars.len() {
+            Some(self.chars[self.tail as usize])
+        } else {
+            None
+        }
     }
 
     fn parse(&mut self) -> Vec<Operation> {
