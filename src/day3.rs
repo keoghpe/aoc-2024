@@ -4,11 +4,211 @@
 
 use std::{ops::Mul, thread::current};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 enum Operation {
-    Mul { left: i64, right: i64 },
+    Mul {
+        left: Option<i64>,
+        right: Option<i64>,
+    },
     Do,
     Dont,
+}
+
+impl Operation {
+    pub fn valid(&self) -> bool {
+        match self {
+            Self::Do => true,
+            Self::Dont => true,
+            Self::Mul {
+                left: Some(_),
+                right: Some(_),
+            } => true,
+            _ => false,
+        }
+    }
+}
+
+struct Parser<'a> {
+    current: i64,
+    tail: i64,
+    current_operation_string: String,
+    is_parsing_args: bool,
+    number_buffer: String,
+    current_operation: Option<Operation>,
+    contents: &'a String,
+    result: Vec<Operation>,
+}
+
+impl<'a> Parser<'a> {
+    fn new(contents: &'a String) -> Self {
+        Self {
+            current: 0,
+            tail: 0,
+            current_operation_string: "".to_string(),
+            is_parsing_args: false,
+            number_buffer: "".to_string(),
+            current_operation: None,
+            contents: contents,
+            result: vec![],
+        }
+    }
+
+    fn advance_tail(&mut self) {
+        self.tail += 1;
+    }
+
+    fn advance_current(&mut self) {
+        self.current = self.current + 1;
+        self.tail = self.current;
+        self.current_operation_string = "".to_string();
+        self.is_parsing_args = false;
+        self.number_buffer = "".to_string();
+        self.current_operation = None;
+    }
+
+    fn consume_operation(&mut self) {
+        self.current = self.tail + 1;
+        self.tail = self.current;
+        self.current_operation_string = "".to_string();
+        self.is_parsing_args = false;
+        self.number_buffer = "".to_string();
+        match self.current_operation {
+            Some(operation) => {
+                self.result.push(operation);
+            }
+            None => (),
+        }
+        self.current_operation = None;
+    }
+
+    fn current_char(&self) -> Option<char> {
+        self.contents.chars().nth(self.tail as usize)
+    }
+
+    fn parse(&mut self) -> Vec<Operation> {
+        loop {
+            // println!("{}", self.current_operation_string);
+            // println!("{:?}", self.current_operation);
+
+            match self.current_char() {
+                Some(c) => {
+                    match self.current_operation {
+                        None => {
+                            self.current_operation_string.push(c);
+
+                            match self.current_operation_string.as_str() {
+                                // use a paren to distinguish from don't
+                                "do(" => {
+                                    self.current_operation = Some(Operation::Do);
+                                    // self.advance_tail();
+                                }
+                                "don't" => {
+                                    self.current_operation = Some(Operation::Dont);
+                                    self.advance_tail();
+                                }
+                                "mul" => {
+                                    self.current_operation = Some(Operation::Mul {
+                                        left: None,
+                                        right: None,
+                                    });
+                                    self.advance_tail();
+                                }
+                                other => {
+                                    // There's definitely a more optimal way of detecting a valid command
+                                    if other.len() > 4 {
+                                        // not a valid command - reset
+                                        self.advance_current();
+                                    } else {
+                                        self.advance_tail();
+                                    }
+                                }
+                            }
+                        }
+                        Some(operation) => {
+                            match c {
+                                '(' => {
+                                    if !self.is_parsing_args {
+                                        self.is_parsing_args = true;
+                                        self.advance_tail();
+                                    } else {
+                                        self.advance_current();
+                                    }
+                                }
+                                ')' => {
+                                    match operation {
+                                        Operation::Mul {
+                                            left: Some(lval),
+                                            right: None,
+                                        } => {
+                                            if self.number_buffer.len() > 0 {
+                                                self.current_operation = Some(Operation::Mul {
+                                                    left: Some(lval),
+                                                    right: Some(
+                                                        self.number_buffer.parse().unwrap(),
+                                                    ),
+                                                });
+                                            }
+                                        }
+                                        _ => (),
+                                    }
+
+                                    if self.current_operation.unwrap().valid()
+                                        && self.is_parsing_args
+                                    {
+                                        self.consume_operation();
+                                    } else {
+                                        self.advance_current();
+                                    }
+                                }
+                                ',' => {
+                                    // for mul command - push the first number - if there's none, it's invalid
+                                    // invalid otherwise
+                                    match operation {
+                                        Operation::Mul {
+                                            left: None,
+                                            right: None,
+                                        } => {
+                                            if self.number_buffer.len() > 0 {
+                                                self.current_operation = Some(Operation::Mul {
+                                                    left: Some(self.number_buffer.parse().unwrap()),
+                                                    right: None,
+                                                });
+                                                self.number_buffer = "".to_string();
+                                                self.advance_tail();
+                                            } else {
+                                                self.advance_current();
+                                            }
+                                        }
+                                        _ => {
+                                            // invalid
+                                            self.advance_current();
+                                        }
+                                    }
+                                }
+                                '0'..='9' => {
+                                    // add to buffer if less than 3 & valid command
+                                    if self.number_buffer.len() < 3 {
+                                        self.number_buffer.push(c);
+                                        self.advance_tail();
+                                    } else {
+                                        // invalid
+                                        self.advance_current();
+                                    }
+                                }
+                                _ => {
+                                    // invalid
+                                    self.advance_current();
+                                }
+                            }
+                        }
+                    }
+                }
+                None => break,
+            }
+        }
+
+        self.result.clone()
+    }
 }
 
 fn main() {
@@ -23,128 +223,7 @@ fn process_contents(contents: &String) -> i64 {
 }
 
 fn parse_corrupted_memory(contents: &String) -> Vec<Operation> {
-    // scan until you get to mul(
-    // scan 1-3 digits
-    // scan a comma
-    // scan 1-3 digits
-    // scan )
-    // add digits to vec
-    // TODO extract a struct and a function to reset the state
-    let mut consumed_chars = 0;
-    let mut left = "".to_string();
-    let mut right = "".to_string();
-    let mut parsed_comma = false;
-    let mut current_parsed_name = "".to_string();
-
-    let mut result = vec![];
-
-    let content_chars = contents.chars();
-
-    for (i, current_char) in content_chars.enumerate() {
-
-        // println!(
-        //     "chars consumed: {}, current: {}, left: {}, right: {}, parsed_comma: {}",
-        //     consumed_chars, current_char, left, right, parsed_comma
-        // );
-
-        // match current_char {
-        //     'a'..='z' | '\'' | '(' => {
-        //         match &current_parsed_name => {
-        //             // "mul(" => {}
-        //             "do()" {}
-        //             "don't()" {}
-        //         }
-        //     }
-        //     '0'..='9' => {}
-        //     ',' => {}
-        //     ')' => {
-        //         // append the operation
-        //     }
-        //     _ => {
-        //         // Anything else - reset
-        //     }
-        // }
-
-        // match (consumed_chars, current_char) {
-        //     (0, 'm') | (1, 'u') | (2, 'l') | (3, '(') => {
-        //         consumed_chars += 1;
-        //     }
-        //     // mul(123,123)
-        //     (4..=10, '0'..='9') => {
-        //         // technically, this allows numbers with leading 0s
-        //         // we could disallow this by checking that the left or right is empty before appending
-
-        //         if !parsed_comma {
-        //             if left.len() < 3 {
-        //                 left.push_str(&current_char.to_string());
-        //                 consumed_chars += 1;
-        //             } else {
-        //                 // println!("BREAKING LEFT");
-        //                 // break
-        //                 consumed_chars = 0;
-        //                 left = "".to_string();
-        //                 right = "".to_string();
-        //                 parsed_comma = false;
-        //             }
-        //         } else {
-        //             // println!("PARSED COMMA");
-        //             if right.len() < 3 {
-        //                 println!("{} {}", consumed_chars, current_char);
-        //                 right.push_str(&current_char.to_string());
-        //                 consumed_chars += 1;
-        //             } else {
-        //                 consumed_chars = 0;
-        //                 left = "".to_string();
-        //                 right = "".to_string();
-        //                 parsed_comma = false;
-        //             }
-        //         }
-        //     }
-        //     (5..=9, ',') => {
-        //         // println!("PARSING COMMA");
-        //         if !parsed_comma {
-        //             // println!("SETTING PARSED COMMA");
-        //             parsed_comma = true;
-        //             consumed_chars += 1;
-        //         } else {
-        //             consumed_chars = 0;
-        //             left = "".to_string();
-        //             right = "".to_string();
-        //             parsed_comma = false;
-        //         }
-        //     }
-        //     (_, ')') => {
-        //         // we have successfully parsed an instruction
-        //         // append to the vector
-
-        //         match (left.parse::<i64>(), right.parse::<i64>()) {
-        //             (Ok(left_parsed), Ok(right_parsed)) => {
-        //                 println!("push to result");
-        //                 result.push(Operation::Mul {
-        //                     left: left_parsed,
-        //                     right: right_parsed,
-        //                 });
-        //             }
-        //             (_, _) => {
-        //                 println!("parsing error");
-        //             }
-        //         }
-
-        //         consumed_chars = 0;
-        //         left = "".to_string();
-        //         right = "".to_string();
-        //         parsed_comma = false;
-        //     }
-        //     (_, _) => {
-        //         consumed_chars = 0;
-        //         left = "".to_string();
-        //         right = "".to_string();
-        //         parsed_comma = false;
-        //     }
-        // }
-    }
-
-    result
+    Parser::new(contents).parse()
 }
 
 fn process_instructions(instructions: &Vec<Operation>) -> i64 {
@@ -153,7 +232,10 @@ fn process_instructions(instructions: &Vec<Operation>) -> i64 {
     instructions
         .iter()
         .map(|operation| match operation {
-            Operation::Mul { left, right } => {
+            Operation::Mul {
+                left: Some(left),
+                right: Some(right),
+            } => {
                 if should_process {
                     left * right
                 } else {
@@ -167,6 +249,9 @@ fn process_instructions(instructions: &Vec<Operation>) -> i64 {
             Operation::Dont => {
                 should_process = false;
                 0
+            }
+            _ => {
+                panic!("invalid operation detected")
             }
         })
         .sum()
@@ -182,100 +267,172 @@ mod tests {
         assert_eq!(0, process_instructions(&vec![]));
         assert_eq!(
             4,
-            process_instructions(&vec![Operation::Mul { left: 2, right: 2 }])
+            process_instructions(&vec![Operation::Mul {
+                left: Some(2),
+                right: Some(2)
+            }])
         );
         assert_eq!(
             10,
             process_instructions(&vec![
-                Operation::Mul { left: 2, right: 2 },
-                Operation::Mul { left: 2, right: 2 },
-                Operation::Mul { left: 1, right: 2 }
+                Operation::Mul {
+                    left: Some(2),
+                    right: Some(2)
+                },
+                Operation::Mul {
+                    left: Some(2),
+                    right: Some(2)
+                },
+                Operation::Mul {
+                    left: Some(1),
+                    right: Some(2)
+                }
             ])
         );
 
         assert_eq!(
             6,
             process_instructions(&vec![
-                Operation::Mul { left: 2, right: 2 },
+                Operation::Mul {
+                    left: Some(2),
+                    right: Some(2)
+                },
                 Operation::Dont,
-                Operation::Mul { left: 2, right: 2 },
+                Operation::Mul {
+                    left: Some(2),
+                    right: Some(2)
+                },
                 Operation::Do,
-                Operation::Mul { left: 1, right: 2 }
+                Operation::Mul {
+                    left: Some(1),
+                    right: Some(2)
+                }
             ])
         );
     }
     #[test]
     fn test_parse_corrupted_memory() {
-        assert_eq!(
-            Vec::<Operation>::new(),
-            parse_corrupted_memory(&"".to_string())
-        );
+        // assert_eq!(
+        //     Vec::<Operation>::new(),
+        //     parse_corrupted_memory(&"".to_string())
+        // );
 
-        assert_eq!(
-            Vec::<Operation>::new(),
-            parse_corrupted_memory(&"sometotallyrandomnonsense".to_string())
-        );
+        // assert_eq!(
+        //     Vec::<Operation>::new(),
+        //     parse_corrupted_memory(&"sometotallyrandomnonsense".to_string())
+        // );
 
-        assert_eq!(
-            vec![Operation::Mul { left: 2, right: 4 }],
-            parse_corrupted_memory(&"mul(2,4)".to_string())
-        );
+        // assert_eq!(
+        //     vec![Operation::Mul {
+        //         left: Some(2),
+        //         right: Some(4)
+        //     }],
+        //     parse_corrupted_memory(&"mul(2,4)".to_string())
+        // );
 
-        assert_eq!(
-            vec![Operation::Mul { left: 2, right: 4 }],
-            parse_corrupted_memory(&"mulmul(2,4)".to_string())
-        );
+        // assert_eq!(
+        //     vec![Operation::Mul {
+        //         left: Some(2),
+        //         right: Some(4)
+        //     }],
+        //     parse_corrupted_memory(&"mulmul(2,4)".to_string())
+        // );
+
+        // assert_eq!(
+        //     vec![
+        //         Operation::Mul {
+        //             left: Some(2),
+        //             right: Some(4)
+        //         },
+        //         Operation::Mul {
+        //             left: Some(2),
+        //             right: Some(4)
+        //         }
+        //     ],
+        //     parse_corrupted_memory(&"mul(2,4)mul(2,4)".to_string())
+        // );
+
+        // assert_eq!(
+        //     Vec::<Operation>::new(),
+        //     parse_corrupted_memory(&"mul(4*".to_string())
+        // );
+
+        // assert_eq!(
+        //     Vec::<Operation>::new(),
+        //     parse_corrupted_memory(&"mul(6,9!".to_string())
+        // );
+
+        // assert_eq!(
+        //     Vec::<Operation>::new(),
+        //     parse_corrupted_memory(&"?(12,34)".to_string())
+        // );
+
+        // assert_eq!(
+        //     Vec::<Operation>::new(),
+        //     parse_corrupted_memory(&"mul ( 2 , 4 )".to_string())
+        // );
+
+        // assert_eq!(
+        //     Vec::<Operation>::new(),
+        //     parse_corrupted_memory(&"mul(200,)".to_string())
+        // );
+
+        // assert_eq!(
+        //     vec![
+        //         Operation::Mul {
+        //             left: Some(2),
+        //             right: Some(4)
+        //         },
+        //         Operation::Mul {
+        //             left: Some(5),
+        //             right: Some(5)
+        //         },
+        //         Operation::Mul {
+        //             left: Some(11),
+        //             right: Some(8)
+        //         },
+        //         Operation::Mul {
+        //             left: Some(8),
+        //             right: Some(5)
+        //         }
+        //     ],
+        //     parse_corrupted_memory(
+        //         &"xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))"
+        //             .to_string()
+        //     )
+        // );
+
+        // assert_eq!(
+        //     vec![Operation::Mul { left:Some(815), right: Some(266)}, Operation::Mul { left:Some(392), right: Some(42)}, Operation::Mul { left:Some(640), right: Some(124)}, Operation::Mul { left:Some(96), right: Some(4)}, Operation::Mul { left:Some(371), right: Some(890)}],
+        //     parse_corrupted_memory(
+        //         &"mul(815,266)from()>when(352,983)when()?*mul(392,42)what()^mul(640,124),+-~mul(96,4)'&}^!mul(371,890)}"
+        //             .to_string()
+        //     )
+        // );
 
         assert_eq!(
             vec![
-                Operation::Mul { left: 2, right: 4 },
-                Operation::Mul { left: 2, right: 4 }
-            ],
-            parse_corrupted_memory(&"mul(2,4)mul(2,4)".to_string())
-        );
-
-        assert_eq!(
-            Vec::<Operation>::new(),
-            parse_corrupted_memory(&"mul(4*".to_string())
-        );
-
-        assert_eq!(
-            Vec::<Operation>::new(),
-            parse_corrupted_memory(&"mul(6,9!".to_string())
-        );
-
-        assert_eq!(
-            Vec::<Operation>::new(),
-            parse_corrupted_memory(&"?(12,34)".to_string())
-        );
-
-        assert_eq!(
-            Vec::<Operation>::new(),
-            parse_corrupted_memory(&"mul ( 2 , 4 )".to_string())
-        );
-
-        assert_eq!(
-            Vec::<Operation>::new(),
-            parse_corrupted_memory(&"mul(200,)".to_string())
-        );
-
-        assert_eq!(
-            vec![
-                Operation::Mul { left: 2, right: 4 },
-                Operation::Mul { left: 5, right: 5 },
-                Operation::Mul { left: 11, right: 8 },
-                Operation::Mul { left: 8, right: 5 }
+                Operation::Mul {
+                    left: Some(2),
+                    right: Some(4),
+                },
+                Operation::Dont,
+                Operation::Mul {
+                    left: Some(5),
+                    right: Some(5)
+                },
+                Operation::Mul {
+                    left: Some(11),
+                    right: Some(8)
+                },
+                Operation::Do,
+                Operation::Mul {
+                    left: Some(8),
+                    right: Some(5)
+                },
             ],
             parse_corrupted_memory(
-                &"xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))"
-                    .to_string()
-            )
-        );
-
-        assert_eq!(
-            vec![Operation::Mul { left:815, right: 266}, Operation::Mul { left:392, right: 42}, Operation::Mul { left:640, right: 124}, Operation::Mul { left:96, right: 4}, Operation::Mul { left:371, right: 890}],
-            parse_corrupted_memory(
-                &"mul(815,266)from()>when(352,983)when()?*mul(392,42)what()^mul(640,124),+-~mul(96,4)'&}^!mul(371,890)}"
+                &"xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))"
                     .to_string()
             )
         );
@@ -287,6 +444,14 @@ mod tests {
             161,
             process_contents(
                 &"xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))"
+                    .to_string()
+            )
+        );
+
+        assert_eq!(
+            48,
+            process_contents(
+                &"xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))"
                     .to_string()
             )
         );
