@@ -312,103 +312,103 @@ mod tests {
     }
     #[test]
     fn test_parse_corrupted_memory() {
-        // assert_eq!(
-        //     Vec::<Operation>::new(),
-        //     parse_corrupted_memory(&"".to_string())
-        // );
+        assert_eq!(
+            Vec::<Operation>::new(),
+            parse_corrupted_memory(&"".to_string())
+        );
 
-        // assert_eq!(
-        //     Vec::<Operation>::new(),
-        //     parse_corrupted_memory(&"sometotallyrandomnonsense".to_string())
-        // );
+        assert_eq!(
+            Vec::<Operation>::new(),
+            parse_corrupted_memory(&"sometotallyrandomnonsense".to_string())
+        );
 
-        // assert_eq!(
-        //     vec![Operation::Mul {
-        //         left: Some(2),
-        //         right: Some(4)
-        //     }],
-        //     parse_corrupted_memory(&"mul(2,4)".to_string())
-        // );
+        assert_eq!(
+            vec![Operation::Mul {
+                left: Some(2),
+                right: Some(4)
+            }],
+            parse_corrupted_memory(&"mul(2,4)".to_string())
+        );
 
-        // assert_eq!(
-        //     vec![Operation::Mul {
-        //         left: Some(2),
-        //         right: Some(4)
-        //     }],
-        //     parse_corrupted_memory(&"mulmul(2,4)".to_string())
-        // );
+        assert_eq!(
+            vec![Operation::Mul {
+                left: Some(2),
+                right: Some(4)
+            }],
+            parse_corrupted_memory(&"mulmul(2,4)".to_string())
+        );
 
-        // assert_eq!(
-        //     vec![
-        //         Operation::Mul {
-        //             left: Some(2),
-        //             right: Some(4)
-        //         },
-        //         Operation::Mul {
-        //             left: Some(2),
-        //             right: Some(4)
-        //         }
-        //     ],
-        //     parse_corrupted_memory(&"mul(2,4)mul(2,4)".to_string())
-        // );
+        assert_eq!(
+            vec![
+                Operation::Mul {
+                    left: Some(2),
+                    right: Some(4)
+                },
+                Operation::Mul {
+                    left: Some(2),
+                    right: Some(4)
+                }
+            ],
+            parse_corrupted_memory(&"mul(2,4)mul(2,4)".to_string())
+        );
 
-        // assert_eq!(
-        //     Vec::<Operation>::new(),
-        //     parse_corrupted_memory(&"mul(4*".to_string())
-        // );
+        assert_eq!(
+            Vec::<Operation>::new(),
+            parse_corrupted_memory(&"mul(4*".to_string())
+        );
 
-        // assert_eq!(
-        //     Vec::<Operation>::new(),
-        //     parse_corrupted_memory(&"mul(6,9!".to_string())
-        // );
+        assert_eq!(
+            Vec::<Operation>::new(),
+            parse_corrupted_memory(&"mul(6,9!".to_string())
+        );
 
-        // assert_eq!(
-        //     Vec::<Operation>::new(),
-        //     parse_corrupted_memory(&"?(12,34)".to_string())
-        // );
+        assert_eq!(
+            Vec::<Operation>::new(),
+            parse_corrupted_memory(&"?(12,34)".to_string())
+        );
 
-        // assert_eq!(
-        //     Vec::<Operation>::new(),
-        //     parse_corrupted_memory(&"mul ( 2 , 4 )".to_string())
-        // );
+        assert_eq!(
+            Vec::<Operation>::new(),
+            parse_corrupted_memory(&"mul ( 2 , 4 )".to_string())
+        );
 
-        // assert_eq!(
-        //     Vec::<Operation>::new(),
-        //     parse_corrupted_memory(&"mul(200,)".to_string())
-        // );
+        assert_eq!(
+            Vec::<Operation>::new(),
+            parse_corrupted_memory(&"mul(200,)".to_string())
+        );
 
-        // assert_eq!(
-        //     vec![
-        //         Operation::Mul {
-        //             left: Some(2),
-        //             right: Some(4)
-        //         },
-        //         Operation::Mul {
-        //             left: Some(5),
-        //             right: Some(5)
-        //         },
-        //         Operation::Mul {
-        //             left: Some(11),
-        //             right: Some(8)
-        //         },
-        //         Operation::Mul {
-        //             left: Some(8),
-        //             right: Some(5)
-        //         }
-        //     ],
-        //     parse_corrupted_memory(
-        //         &"xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))"
-        //             .to_string()
-        //     )
-        // );
+        assert_eq!(
+            vec![
+                Operation::Mul {
+                    left: Some(2),
+                    right: Some(4)
+                },
+                Operation::Mul {
+                    left: Some(5),
+                    right: Some(5)
+                },
+                Operation::Mul {
+                    left: Some(11),
+                    right: Some(8)
+                },
+                Operation::Mul {
+                    left: Some(8),
+                    right: Some(5)
+                }
+            ],
+            parse_corrupted_memory(
+                &"xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))"
+                    .to_string()
+            )
+        );
 
-        // assert_eq!(
-        //     vec![Operation::Mul { left:Some(815), right: Some(266)}, Operation::Mul { left:Some(392), right: Some(42)}, Operation::Mul { left:Some(640), right: Some(124)}, Operation::Mul { left:Some(96), right: Some(4)}, Operation::Mul { left:Some(371), right: Some(890)}],
-        //     parse_corrupted_memory(
-        //         &"mul(815,266)from()>when(352,983)when()?*mul(392,42)what()^mul(640,124),+-~mul(96,4)'&}^!mul(371,890)}"
-        //             .to_string()
-        //     )
-        // );
+        assert_eq!(
+            vec![Operation::Mul { left:Some(815), right: Some(266)}, Operation::Mul { left:Some(392), right: Some(42)}, Operation::Mul { left:Some(640), right: Some(124)}, Operation::Mul { left:Some(96), right: Some(4)}, Operation::Mul { left:Some(371), right: Some(890)}],
+            parse_corrupted_memory(
+                &"mul(815,266)from()>when(352,983)when()?*mul(392,42)what()^mul(640,124),+-~mul(96,4)'&}^!mul(371,890)}"
+                    .to_string()
+            )
+        );
 
         assert_eq!(
             vec![
