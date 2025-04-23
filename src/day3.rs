@@ -2,8 +2,6 @@
 // use std::io::{self, BufRead};
 // use std::path::Path;
 
-use std::{ops::Mul, thread::current};
-
 #[derive(Debug, PartialEq, Copy, Clone)]
 enum Operation {
     Mul {
