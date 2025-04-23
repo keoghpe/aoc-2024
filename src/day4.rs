@@ -6,7 +6,7 @@ fn main() {
     let mut grid: Vec<Vec<char>> = vec![vec![]];
     let mut total = 0;
 
-    if let Ok(lines) = read_lines("tests/day4-sample.txt") {
+    if let Ok(lines) = read_lines("tests/day4.txt") {
         for line in lines {
             grid.push(line.unwrap().chars().collect());
         }
@@ -26,28 +26,100 @@ fn main() {
 fn count_word(word: String, grid: &Vec<Vec<char>>, i: i64, j: i64) -> i64 {
     let mut total = 0;
 
-    if word.len() == 1 {
-        let char = word.chars().last().unwrap();
+    // word.chars()
+    // search up
+    if (0..word.len()).all(|offset| {
+        is_char_at_index(
+            word.chars().nth(offset).unwrap(),
+            grid,
+            i + offset as i64,
+            j,
+        )
+    }) {
+        total += 1;
+    }
+    // search down
 
-        if is_char_at_index(char, grid, i, j) {
-            total += 1;
-        }
-    } else {
-        let first_char_len = word.chars().next().unwrap().len_utf8();
-        let (first, rest) = word.split_at(first_char_len);
+    if (0..word.len()).all(|offset| {
+        is_char_at_index(
+            word.chars().nth(offset).unwrap(),
+            grid,
+            i - offset as i64,
+            j,
+        )
+    }) {
+        total += 1;
+    }
+    // search left
 
-        if is_char_at_index(first.chars().nth(0).unwrap(), grid, i, j) {
-            total += count_word(rest.to_string(), grid, i - 1, j - 1);
-            total += count_word(rest.to_string(), grid, i - 1, j);
-            total += count_word(rest.to_string(), grid, i - 1, j + 1);
+    if (0..word.len()).all(|offset| {
+        is_char_at_index(
+            word.chars().nth(offset).unwrap(),
+            grid,
+            i,
+            j - offset as i64,
+        )
+    }) {
+        total += 1;
+    }
+    // search right
 
-            total += count_word(rest.to_string(), grid, i, j - 1);
-            total += count_word(rest.to_string(), grid, i, j + 1);
+    if (0..word.len()).all(|offset| {
+        is_char_at_index(
+            word.chars().nth(offset).unwrap(),
+            grid,
+            i,
+            j + offset as i64,
+        )
+    }) {
+        total += 1;
+    }
+    // up left
 
-            total += count_word(rest.to_string(), grid, i + 1, j - 1);
-            total += count_word(rest.to_string(), grid, i + 1, j);
-            total += count_word(rest.to_string(), grid, i + 1, j + 1);
-        }
+    if (0..word.len()).all(|offset| {
+        is_char_at_index(
+            word.chars().nth(offset).unwrap(),
+            grid,
+            i + offset as i64,
+            j - offset as i64,
+        )
+    }) {
+        total += 1;
+    }
+    // down left
+
+    if (0..word.len()).all(|offset| {
+        is_char_at_index(
+            word.chars().nth(offset).unwrap(),
+            grid,
+            i - offset as i64,
+            j + offset as i64,
+        )
+    }) {
+        total += 1;
+    }
+    // up right
+
+    if (0..word.len()).all(|offset| {
+        is_char_at_index(
+            word.chars().nth(offset).unwrap(),
+            grid,
+            i + offset as i64,
+            j + offset as i64,
+        )
+    }) {
+        total += 1;
+    }
+    // down right
+    if (0..word.len()).all(|offset| {
+        is_char_at_index(
+            word.chars().nth(offset).unwrap(),
+            grid,
+            i - offset as i64,
+            j - offset as i64,
+        )
+    }) {
+        total += 1;
     }
 
     total
